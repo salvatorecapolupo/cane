@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>San Bernardo vs Rete — bandwidth-delay game</title>
+<style>
+  :root{
+    --bg:#0b1020;
+    --panel:#11182c;
+    --panel2:#151f38;
+    --ink:#f4f7ff;
+    --muted:#a8b3c9;
+    --line:#273554;
+    --cyan:#55d8ff;
+    --green:#68e39b;
+    --gold:#ffd166;
+    --red:#ff7b8c;
+    --road:#2b3347;
+    --grass:#183827;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(85,216,255,.10), transparent 28%),
+      radial-gradient(circle at 85% 0%, rgba(104,227,155,.08), transparent 25%),
+      var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 40px}
+  header{display:flex;justify-content:space-between;gap:24px;align-items:flex-end;margin-bottom:20px}
+  .eyebrow{font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);font-weight:800}
+  h1{margin:5px 0 0;font-size:clamp(2rem,5vw,4rem);line-height:.96;letter-spacing:-.05em}
+  .tagline{max-width:540px;color:var(--muted);font-size:1rem;line-height:1.45}
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:18px}
+  .panel{background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.01)),var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:0 18px 50px rgba(0,0,0,.22)}
+  .controls{padding:18px}
+  .controls h2,.math h2,.game-head h2{margin:0 0 14px;font-size:1rem;letter-spacing:.01em}
+  .field{margin:13px 0}
+  .field label{display:flex;justify-content:space-between;gap:12px;font-size:.88rem;color:var(--muted);margin-bottom:7px}
+  .value{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:800}
+  input[type=range]{width:100%;accent-color:var(--cyan);cursor:pointer}
+  input[type=number]{width:100%;background:#0d1427;border:1px solid var(--line);color:var(--ink);padding:10px 11px;border-radius:11px;font-size:.95rem}
+  .number-row{display:grid;grid-template-columns:1fr 84px;gap:8px;align-items:center}
+  .field-error{min-height:18px;margin-top:6px;color:var(--red);font-size:.75rem;line-height:1.25}
+  input.invalid{border-color:var(--red);box-shadow:0 0 0 2px rgba(255,123,140,.12)}
+  .presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  button{border:0;background:#1b2745;color:var(--ink);padding:9px 11px;border-radius:10px;cursor:pointer;font-weight:750}
+  button:hover{filter:brightness(1.12)}
+  .primary{width:100%;margin-top:14px;padding:13px 14px;background:linear-gradient(180deg,#45d5fb,#28aedd);color:#06101d;font-size:1rem;box-shadow:0 12px 28px rgba(40,174,221,.24)}
+  .secondary{background:#18233c}
+  .game{padding:0;overflow:hidden}
+  .game-head{padding:18px 18px 12px;display:flex;justify-content:space-between;gap:14px;align-items:center}
+  .badge{padding:7px 10px;border-radius:999px;font-size:.76rem;font-weight:850;letter-spacing:.04em;text-transform:uppercase;background:#17223a;color:var(--muted);border:1px solid var(--line)}
+  .badge.cane{color:#06151e;background:var(--green);border-color:transparent}
+  .badge.rete{color:#1d1300;background:var(--gold);border-color:transparent}
+  .badge.tie{color:#10131a;background:#d6dce7;border-color:transparent}
+  .stage{position:relative;min-height:400px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:linear-gradient(#10182a 0 52%,#142e22 52% 100%)}
+  .sky{position:absolute;inset:0 0 48% 0;background:linear-gradient(#0d1426,#132039)}
+  .cloud{position:absolute;width:90px;height:24px;border-radius:999px;background:rgba(255,255,255,.08);filter:blur(1px)}
+  .cloud::before,.cloud::after{content:"";position:absolute;background:inherit;border-radius:50%}
+  .cloud::before{width:34px;height:34px;left:18px;top:-17px}.cloud::after{width:48px;height:48px;left:45px;top:-23px}
+  .cloud.c1{left:9%;top:12%}.cloud.c2{right:12%;top:22%;transform:scale(.7)}
+  .sun{position:absolute;right:7%;top:9%;width:72px;height:72px;border-radius:50%;background:#ffd873;box-shadow:0 0 35px rgba(255,216,115,.28)}
+  .lane{position:absolute;left:22px;right:22px;height:124px}
+  .lane.internet{top:48px}
+  .lane.dog{bottom:42px}
+  .lane-title{position:absolute;left:0;top:-29px;font-size:.83rem;color:#c7d2e8;font-weight:850;letter-spacing:.03em}
+  .track{position:absolute;left:72px;right:72px;top:48px;height:10px;border-radius:999px;background:#25314b;border:1px solid rgba(255,255,255,.06);overflow:visible}
+  .dog .track{background:var(--road);height:48px;border-radius:12px;border-bottom:7px solid #1e2738;top:29px}
+  .grass-line{position:absolute;left:72px;right:72px;bottom:18px;height:1px;background:rgba(104,227,155,.18)}
+  .mark{position:absolute;top:-5px;width:2px;height:20px;background:#55627d;opacity:.6}
+  .m1{left:25%}.m2{left:50%}.m3{left:75%}
+  .endpoint{position:absolute;top:-15px;width:1px;height:40px;border-left:2px dashed #71809d}
+  .start{left:0}.finish{right:0}
+  .endpoint-label{position:absolute;top:29px;font-size:.65rem;color:#9ba8bf;white-space:nowrap;transform:translateX(-50%)}
+  .start .endpoint-label{transform:none}.finish .endpoint-label{transform:translateX(-100%)}
+  .packet{position:absolute;top:-10px;left:0;width:30px;height:30px;border-radius:7px;background:var(--cyan);box-shadow:0 0 18px rgba(85,216,255,.45);display:grid;place-items:center;color:#041018;font-size:.7rem;font-weight:900;transition:none}
+  .packet::before{content:"▣"}
+  .dog-wrap{position:absolute;left:0;bottom:-21px;width:120px;height:76px;overflow:visible;transform:translateX(0);pointer-events:none}
+  .dog-window{position:absolute;left:0;bottom:0;width:120px;height:76px;overflow:hidden;image-rendering:pixelated}
+  .dog-sheet{position:absolute;left:26px;bottom:5px;width:64px;height:64px;image-rendering:pixelated;image-rendering:crisp-edges;max-width:none}
+  .dog-window.running .dog-sheet{animation:dogBob .42s steps(2) infinite}
+  .dog-window.idle .dog-sheet{animation:none}
+  .fallback-dog{display:none;position:absolute;left:28px;bottom:0;font-size:56px;line-height:70px;filter:drop-shadow(0 6px 0 rgba(0,0,0,.3))}
+  .dog-window.failed .fallback-dog{display:block}
+  @keyframes dogBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  .finish-flag{position:absolute;right:-22px;top:-7px;width:38px;height:58px}
+  .finish-flag::before{content:"";position:absolute;left:10px;top:0;width:4px;height:58px;background:#dfe6f3}
+  .finish-flag::after{content:"";position:absolute;left:14px;top:4px;width:20px;height:16px;background:repeating-linear-gradient(45deg,#f4f7ff 0 5px,#303b55 5px 10px)}
+  .hud{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px 18px;background:#0d1426}
+  .metric{background:#111b31;border:1px solid var(--line);border-radius:13px;padding:10px 11px}
+  .metric .k{font-size:.7rem;color:#8290aa;text-transform:uppercase;letter-spacing:.07em}.metric .v{font-size:1.05rem;font-weight:900;font-variant-numeric:tabular-nums;margin-top:2px}
+  .status{padding:14px 18px 18px;display:flex;justify-content:space-between;gap:14px;align-items:end}
+  .status-main{font-size:1.15rem;font-weight:900}.status-sub{color:var(--muted);font-size:.86rem;margin-top:4px}
+  .mini-bar{height:7px;border-radius:999px;background:#202c46;overflow:hidden;margin-top:8px}.mini-bar span{display:block;height:100%;background:var(--cyan);width:0%}
+  .math{margin-top:18px;padding:18px}.formula{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#0c1324;border:1px solid var(--line);border-radius:12px;padding:13px 14px;color:#d9e2f5;line-height:1.7;font-size:.92rem}.formula b{color:var(--cyan)}
+  .insight{margin-top:12px;padding:14px;border-radius:13px;background:linear-gradient(90deg,rgba(104,227,155,.12),rgba(85,216,255,.07));border:1px solid rgba(104,227,155,.25);color:#e9fff2;line-height:1.45}
+  footer{margin-top:16px;color:#75829b;font-size:.72rem;line-height:1.45}.footer-link{color:#9cabc4}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}.controls{order:2}.game{order:1}.stage{min-height:430px}}
+  @media(max-width:560px){.hud{grid-template-columns:1fr 1fr}.status{flex-direction:column;align-items:stretch}.lane{left:10px;right:10px}.track{left:58px;right:58px}.dog-wrap{transform:scale(.88);transform-origin:left bottom}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Mini-game didattico</div>
+      <h1>San Bernardo vs Rete</h1>
+    </div>
+    <div class="tagline">La stessa quantità di dati può arrivare prima via rete oppure nello zaino del cane. Cambia i parametri e guarda dove passa la soglia.</div>
+  </header>
+
+  <div class="grid">
+    <aside class="panel controls">
+      <h2>Parametri della gara</h2>
+
+      <div class="field">
+        <label for="dataRange"><span>Dati da trasferire</span><span class="value" id="dataOut">8.000 Gbit = 1.000 GB</span></label>
+        <input id="dataRange" type="range" min="100" max="50000" step="100" value="8000">
+        <div class="number-row"><input id="dataNum" type="number" min="100" max="50000" step="100" value="8000" inputmode="decimal" aria-describedby="dataError"><span style="color:var(--muted);font-size:.78rem;text-align:right">Gbit</span></div>
+        <div class="field-error" id="dataError" aria-live="polite"></div>
+      </div>
+
+      <div class="field">
+        <label for="distRange"><span>Distanza A → B</span><span class="value" id="distOut">10 km</span></label>
+        <input id="distRange" type="range" min="1" max="500" step="0.1" value="10">
+        <div class="number-row"><input id="distNum" type="number" min="1" max="500" step="0.1" value="10" inputmode="decimal" aria-describedby="distError"><span style="color:var(--muted);font-size:.78rem;text-align:right">km</span></div>
+        <div class="field-error" id="distError" aria-live="polite"></div>
+      </div>
+
+      <div class="field">
+        <label for="dogRange"><span>Velocità del cane</span><span class="value" id="dogOut">5 km/h</span></label>
+        <input id="dogRange" type="range" min="1" max="20" step="0.1" value="5">
+        <div class="number-row"><input id="dogNum" type="number" min="1" max="20" step="0.1" value="5" inputmode="decimal" aria-describedby="dogError"><span style="color:var(--muted);font-size:.78rem;text-align:right">km/h</span></div>
+        <div class="field-error" id="dogError" aria-live="polite"></div>
+      </div>
+
+      <div class="field">
+        <label for="netRange"><span>Velocità della rete</span><span class="value" id="netOut">1 Gb/s</span></label>
+        <input id="netRange" type="range" min="0.1" max="100" step="0.1" value="1">
+        <div class="number-row"><input id="netNum" type="number" min="0.1" max="100" step="0.1" value="1" inputmode="decimal" aria-describedby="netError"><span style="color:var(--muted);font-size:.78rem;text-align:right">Gbit/s</span></div>
+        <div class="field-error" id="netError" aria-live="polite"></div>
+      </div>
+
+      <div class="presets">
+        <button class="secondary" data-preset="base">Base: 8.000 Gb · 10 km</button>
+        <button class="secondary" data-preset="soglia">Soglia: 11,1 km</button>
+        <button class="secondary" data-preset="lontano">Lontano: 100 km</button>
+      </div>
+      <button class="primary" id="startBtn">▶ Avvia la gara</button>
+    </aside>
+
+    <main>
+      <section class="panel game">
+        <div class="game-head">
+          <div><h2>Gara simulata</h2><div style="color:var(--muted);font-size:.82rem">Il gioco comprime il tempo reale in un massimo di 30 secondi.</div></div>
+          <div class="badge" id="resultBadge">Pronto</div>
+        </div>
+
+        <div class="stage">
+          <div class="sky"></div>
+          <div class="cloud c1"></div><div class="cloud c2"></div><div class="sun"></div>
+
+          <div class="lane internet">
+            <div class="lane-title">🌐 RETE — i dati viaggiano sulla linea</div>
+            <div class="track">
+              <div class="endpoint start"><span class="endpoint-label">A</span></div>
+              <div class="endpoint finish"><span class="endpoint-label">B</span></div>
+              <div class="mark m1"></div><div class="mark m2"></div><div class="mark m3"></div>
+              <div class="packet" id="packet"></div>
+            </div>
+          </div>
+
+          <div class="lane dog">
+            <div class="lane-title">🐕 SAN BERNARDO — <span id="dogDataLabel">1.000 GB</span> nello zaino</div>
+            <div class="track">
+              <div class="endpoint start"><span class="endpoint-label">A</span></div>
+              <div class="endpoint finish"><span class="endpoint-label">B</span></div>
+              <div class="mark m1"></div><div class="mark m2"></div><div class="mark m3"></div>
+              <div class="finish-flag"></div>
+              <div class="dog-wrap" id="dogWrap">
+                <div class="dog-window running" id="dogWindow">
+                  <img class="dog-sheet" id="dogSheet" alt="San Bernardo in pixel art">
+                  <div class="fallback-dog">🐕</div>
+                </div>
+              </div>
+            </div>
+            <div class="grass-line"></div>
+          </div>
+        </div>
+
+        <div class="hud">
+          <div class="metric"><div class="k">Tempo rete</div><div class="v" id="netTime">2 h 13 min</div></div>
+          <div class="metric"><div class="k">Tempo cane</div><div class="v" id="dogTime">2 h 0 min</div></div>
+          <div class="metric"><div class="k">Soglia distanza</div><div class="v" id="threshold">11,1 km</div></div>
+        </div>
+
+        <div class="status">
+          <div>
+            <div class="status-main" id="statusMain">Per 10 km vince il cane 🐕</div>
+            <div class="status-sub" id="statusSub">Arriva circa 13 minuti prima della rete.</div>
+          </div>
+          <div style="min-width:190px;text-align:right">
+            <div style="color:#8c99b0;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em">Tempo simulato</div>
+            <div style="font-weight:900;font-variant-numeric:tabular-nums" id="simTime">0,0 s / 30,0 s</div>
+            <div class="mini-bar"><span id="simBar"></span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel math">
+        <h2>Il ragionamento, senza magia</h2>
+        <div class="formula" id="formula"></div>
+        <div class="insight" id="insight"></div>
+      </section>
+
+      <footer>
+        Sprite: <a class="footer-link" href="https://opengameart.org/content/pixel-version-of-a-dog-puppy-s%C3%A3o-bernardo" target="_blank" rel="noopener">“Pixel version of a Dog Puppy (São Bernardo)” di fsvieira su OpenGameArt.org</a>, disponibile anche con licenza CC0. L'app usa lo sprite remoto con fallback a emoji, quindi continua a funzionare anche senza l'asset grafico. I valori della gara sono simbolici: l'animazione non trasferisce davvero i GB.
+      </footer>
+    </main>
+  </div>
+</div>
+
+<script>
+(() => {
+  const els = {
+    dataRange: document.getElementById('dataRange'), dataNum: document.getElementById('dataNum'), dataOut: document.getElementById('dataOut'),
+    distRange: document.getElementById('distRange'), distNum: document.getElementById('distNum'), distOut: document.getElementById('distOut'),
+    dogRange: document.getElementById('dogRange'), dogNum: document.getElementById('dogNum'), dogOut: document.getElementById('dogOut'),
+    netRange: document.getElementById('netRange'), netNum: document.getElementById('netNum'), netOut: document.getElementById('netOut'),
+    netTime: document.getElementById('netTime'), dogTime: document.getElementById('dogTime'), threshold: document.getElementById('threshold'), dogDataLabel: document.getElementById('dogDataLabel'),
+    statusMain: document.getElementById('statusMain'), statusSub: document.getElementById('statusSub'), formula: document.getElementById('formula'), insight: document.getElementById('insight'),
+    packet: document.getElementById('packet'), dogWrap: document.getElementById('dogWrap'), dogWindow: document.getElementById('dogWindow'), dogSheet: document.getElementById('dogSheet'),
+    startBtn: document.getElementById('startBtn'), resultBadge: document.getElementById('resultBadge'), simTime: document.getElementById('simTime'), simBar: document.getElementById('simBar')
+  };
+
+  const DOG_SPRITE = 'https://opengameart.org/sites/default/files/cao_pixel_final_64_0.png';
+  els.dogSheet.src = DOG_SPRITE;
+  els.dogSheet.addEventListener('error', () => els.dogWindow.classList.add('failed'));
+
+  const pairs = [
+    ['dataRange','dataNum'], ['distRange','distNum'], ['dogRange','dogNum'], ['netRange','netNum']
+  ];
+
+  let hasResult = false;
+  let raf = null;
+
+  const validation = {
+    dataNum: { min: 100, max: 50000, label: 'I dati' },
+    distNum: { min: 1, max: 500, label: 'La distanza' },
+    dogNum: { min: 1, max: 20, label: 'La velocità del cane' },
+    netNum: { min: 0.1, max: 100, label: 'La velocità della rete' }
+  };
+
+  function fmt(n, digits=1){ return new Intl.NumberFormat('it-IT',{maximumFractionDigits:digits}).format(n); }
+  function fmtDuration(h){
+    const totalMin = h * 60;
+    if(totalMin < 1) return `${fmt(totalMin,1)} min`;
+    if(totalMin < 60) return `${Math.floor(totalMin)} min ${Math.round((totalMin%1)*60)} s`;
+    const hh = Math.floor(totalMin/60), mm = Math.round(totalMin%60);
+    return `${hh} h ${mm} min`;
+  }
+
+  function setFieldError(id, message){
+    const input = els[id];
+    const error = document.getElementById(id.replace('Num','Error'));
+    input.classList.toggle('invalid', !!message);
+    input.setAttribute('aria-invalid', message ? 'true' : 'false');
+    if(error) error.textContent = message || '';
+  }
+
+  function validateNumberInput(id){
+    const input = els[id];
+    const rule = validation[id];
+    const raw = String(input.value).trim();
+    let message = '';
+    if(raw === '') message = `${rule.label}: inserisci un numero.`;
+    else if(!Number.isFinite(Number(raw))) message = `${rule.label}: usa solo numeri.`;
+    else if(Number(raw) <= 0) message = `${rule.label}: non può essere negativa o zero.`;
+    else if(Number(raw) < rule.min || Number(raw) > rule.max) message = `${rule.label}: valore ammesso ${fmt(rule.min,1)}–${fmt(rule.max,1)}.`;
+    setFieldError(id, message);
+    return !message;
+  }
+
+  function allValid(){
+    return Object.keys(validation).every(validateNumberInput);
+  }
+
+  function readState(){
+    return {
+      dataGb: Number(els.dataNum.value),
+      distanceKm: Number(els.distNum.value),
+      dogKmh: Number(els.dogNum.value),
+      netGbps: Number(els.netNum.value)
+    };
+  }
+
+  function setPair(range, num, value){
+    const min = Number(range.min), max = Number(range.max);
+    const raw = String(value).trim();
+    const vNum = Number(raw);
+    if(!Number.isFinite(vNum)) return false;
+    const v = Math.min(max, Math.max(min, vNum));
+    range.value = v; num.value = v;
+    return true;
+  }
+
+  function calc(s){
+    const tNetS = s.dataGb / s.netGbps;
+    const tDogH = s.distanceKm / s.dogKmh;
+    const tDogS = tDogH * 3600;
+    const thresholdKm = s.dogKmh * tNetS / 3600;
+    return {tNetS,tDogS,tDogH,thresholdKm};
+  }
+
+  function resetResult(){
+    hasResult = false;
+    if(raf) cancelAnimationFrame(raf);
+    raf = null;
+    els.startBtn.textContent = '▶ Avvia la gara';
+    els.resultBadge.className = 'badge';
+    els.resultBadge.textContent = 'Pronto';
+    els.statusMain.textContent = 'Parametri aggiornati: avvia la gara.';
+    els.statusSub.textContent = 'L’esito precedente è stato azzerato.';
+    resetPositions();
+  }
+
+  function updateTexts(){
+    const valid = allValid();
+    if(!valid){
+      els.dataOut.textContent = '—';
+      els.distOut.textContent = '—';
+      els.dogOut.textContent = '—';
+      els.netOut.textContent = '—';
+      els.dogDataLabel.textContent = '— GB nello zaino';
+      els.netTime.textContent = '—';
+      els.dogTime.textContent = '—';
+      els.threshold.textContent = '—';
+      els.formula.innerHTML = '<div><b>Correggi i parametri</b> per continuare la simulazione.</div>';
+      els.insight.innerHTML = '<b>Attenzione:</b> inserisci solo valori numerici positivi e compresi negli intervalli indicati.';
+      els.startBtn.disabled = true;
+      els.startBtn.style.opacity = '.5';
+      resetResult();
+      return;
+    }
+
+    els.startBtn.disabled = false;
+    els.startBtn.style.opacity = '1';
+    const s = readState(), c = calc(s);
+    const dataGB = s.dataGb / 8;
+    els.dataOut.textContent = `${fmt(s.dataGb,0)} Gbit = ${fmt(dataGB,0)} GB`;
+    els.distOut.textContent = `${fmt(s.distanceKm,1)} km`;
+    els.dogOut.textContent = `${fmt(s.dogKmh,1)} km/h`;
+    els.netOut.textContent = `${fmt(s.netGbps,1)} Gbit/s`;
+    els.dogDataLabel.textContent = `${fmt(dataGB,0)} GB nello zaino`;
+    els.netTime.textContent = fmtDuration(c.tNetS/3600);
+    els.dogTime.textContent = fmtDuration(c.tDogH);
+    els.threshold.textContent = `${fmt(c.thresholdKm,1)} km`;
+
+    if(!hasResult){
+      els.resultBadge.className = 'badge';
+      els.resultBadge.textContent = 'Pronto';
+      els.statusMain.textContent = `Per ${fmt(s.distanceKm,1)} km: premi Avvia la gara.`;
+      els.statusSub.textContent = `La soglia corrente è ${fmt(c.thresholdKm,1)} km.`;
+    }
+
+    els.formula.innerHTML = `
+      <div><b>Rete:</b> t = D / v = ${fmt(s.dataGb,0)} Gbit / ${fmt(s.netGbps,1)} Gbit/s = <b>${fmt(c.tNetS/3600,2)} h</b> (${Math.round(c.tNetS)} s)</div>
+      <div><b>Cane:</b> t = d / v = d / ${fmt(s.dogKmh,1)} km/h</div>
+      <div><b>Cane migliore:</b> d / ${fmt(s.dogKmh,1)} &lt; ${fmt(c.tNetS/3600,2)} → <b>d &lt; ${fmt(c.thresholdKm,1)} km</b></div>
+      <div><b>Conversione:</b> ${fmt(s.dataGb,0)} Gbit ÷ 8 = <b>${fmt(dataGB,0)} GB</b></div>
+    `;
+
+    els.insight.innerHTML = `<b>Regola del gioco:</b> sotto ${fmt(c.thresholdKm,1)} km, con questi dati, conviene il cane. Sopra ${fmt(c.thresholdKm,1)} km conviene la rete.<br><span style="color:#b9c6da">Quindi: grandi quantità di dati + piccole distanze → il cane può vincere.</span>`;
+  }
+
+  function resetPositions(){
+    els.packet.style.left = '0px';
+    els.dogWrap.style.left = '0px';
+    els.dogWindow.classList.remove('idle');
+    els.dogWindow.classList.add('running');
+    els.simBar.style.width = '0%';
+    els.simTime.textContent = '0,0 s / 30,0 s';
+  }
+
+  pairs.forEach(([r,n]) => {
+    els[r].addEventListener('input', () => {
+      els[n].value = els[r].value;
+      resetResult();
+      updateTexts();
+    });
+    els[n].addEventListener('input', () => {
+      resetResult();
+      updateTexts();
+    });
+    els[n].addEventListener('blur', () => {
+      validateNumberInput(n);
+      if(allValid()) updateTexts();
+    });
+  });
+
+  document.querySelectorAll('[data-preset]').forEach(btn => btn.addEventListener('click', () => {
+    const presets = {
+      base:{data:8000,dist:10,dog:5,net:1},
+      soglia:{data:8000,dist:11.1,dog:5,net:1},
+      lontano:{data:8000,dist:100,dog:5,net:1}
+    };
+    const p = presets[btn.dataset.preset];
+    setPair(els.dataRange,els.dataNum,p.data); setPair(els.distRange,els.distNum,p.dist); setPair(els.dogRange,els.dogNum,p.dog); setPair(els.netRange,els.netNum,p.net);
+    resetResult();
+    updateTexts();
+  }));
+
+  els.startBtn.addEventListener('click', () => {
+    if(!allValid()) { updateTexts(); return; }
+    if(raf) cancelAnimationFrame(raf);
+    const s = readState(), c = calc(s);
+    const track = document.querySelector('.internet .track');
+    const dogTrack = document.querySelector('.dog .track');
+    const packetW = els.packet.offsetWidth;
+    const dogW = els.dogWrap.offsetWidth;
+    const trackW = track.clientWidth - packetW;
+    const dogTravel = dogTrack.clientWidth - dogW;
+    const maxActualS = Math.max(c.tNetS,c.tDogS);
+    const SIM_MS = 30000;
+    const start = performance.now();
+    hasResult = true;
+    els.startBtn.textContent = '↻ Riavvia la gara';
+    els.resultBadge.className = 'badge';
+    els.resultBadge.textContent = 'In gara';
+    els.statusMain.textContent = 'Partenza!';
+    els.statusSub.textContent = 'Confrontiamo i due tempi di consegna.';
+    els.dogWindow.classList.add('running');
+
+    function frame(now){
+      const sim = Math.min(1,(now-start)/SIM_MS);
+      const actualS = sim * maxActualS;
+      const pNet = Math.min(1, c.tNetS ? actualS/c.tNetS : 1);
+      const pDog = Math.min(1, c.tDogS ? actualS/c.tDogS : 1);
+      els.packet.style.left = `${pNet*trackW}px`;
+      els.dogWrap.style.left = `${pDog*dogTravel}px`;
+      els.simTime.textContent = `${fmt(sim*30,1)} s / 30,0 s`;
+      els.simBar.style.width = `${sim*100}%`;
+
+      if(sim < 1){
+        raf = requestAnimationFrame(frame);
+      } else {
+        els.dogWindow.classList.remove('running'); els.dogWindow.classList.add('idle');
+        const winner = c.tDogS === c.tNetS ? 'tie' : (c.tDogS < c.tNetS ? 'cane' : 'rete');
+        els.resultBadge.className = `badge ${winner}`;
+        if(winner === 'cane'){
+          els.resultBadge.textContent = 'Vince il cane';
+          els.statusMain.textContent = `Per ${fmt(s.distanceKm,1)} km vince il cane 🐕`;
+          els.statusSub.textContent = `🏁 Il San Bernardo ha consegnato per primo.`;
+        } else if(winner === 'rete'){
+          els.resultBadge.textContent = 'Vince la rete';
+          els.statusMain.textContent = `Per ${fmt(s.distanceKm,1)} km vince la rete 🌐`;
+          els.statusSub.textContent = `🏁 La rete ha consegnato per prima.`;
+        } else {
+          els.resultBadge.textContent = 'Pareggio';
+          els.statusMain.textContent = 'Cane e rete arrivano insieme ⚖️';
+          els.statusSub.textContent = '🏁 Hai centrato esattamente la soglia.';
+        }
+        raf = null;
+      }
+    }
+    resetPositions();
+    raf = requestAnimationFrame(frame);
+  });
+
+  updateTexts();
+})();
+</script>
+</body>
+</html>

@@ -3,304 +3,779 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>San Bernardo vs Rete</title>
+<title>San Bernardo vs Rete - Simulator & Comparison</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#0a0f1d;--panel:#11182a;--panel2:#0d1525;--line:#263452;--ink:#f4f7ff;--muted:#9aa8bf;
-  --cyan:#55d8ff;--green:#68e39b;--gold:#ffd166;--red:#ff7b8c;--road:#2b3347;
+:root {
+  --bg: #070b14;
+  --panel: #0f172a;
+  --panel-border: #1e293b;
+  --panel-hover: #172033;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --cyan: #00f0ff;
+  --cyan-glow: rgba(0, 240, 255, 0.35);
+  --green: #10b981;
+  --green-glow: rgba(16, 185, 129, 0.35);
+  --gold: #f59e0b;
+  --gold-glow: rgba(245, 158, 11, 0.35);
+  --red: #ef4444;
+  --road: #1e2538;
 }
-*{box-sizing:border-box}
-body{
-  margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-  color:var(--ink);background:
-  radial-gradient(circle at 12% 8%,rgba(85,216,255,.09),transparent 28%),
-  radial-gradient(circle at 88% 0%,rgba(104,227,155,.07),transparent 24%),var(--bg);
-  min-height:100vh
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  color: var(--text-main);
+  background: radial-gradient(circle at 10% 10%, rgba(0,240,255,0.06), transparent 30%),
+              radial-gradient(circle at 90% 90%, rgba(16,185,129,0.05), transparent 30%),
+              var(--bg);
+  min-height: 100vh;
+  padding-bottom: 40px;
 }
-.wrap{max-width:1180px;margin:auto;padding:24px 20px 34px}
-header{display:flex;justify-content:space-between;align-items:end;gap:22px;margin-bottom:16px}
-.eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);font-weight:900}
-h1{margin:5px 0 0;font-size:clamp(2.1rem,5vw,3.6rem);line-height:.95;letter-spacing:-.05em}
-.header-note{max-width:430px;color:var(--muted);font-size:.9rem;line-height:1.35;text-align:right}
-.grid{display:grid;grid-template-columns:275px 1fr;gap:16px}
-.panel{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.008)),var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.22)}
-.controls{padding:16px}
-.controls h2,.calc h2{margin:0 0 13px;font-size:.98rem}
-.field{padding:11px 0 13px;border-bottom:1px solid rgba(38,52,82,.7)}
-.field:last-of-type{border-bottom:0}
-.field label{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;color:var(--muted);font-size:.82rem}
-.value{font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
-input[type=range]{width:100%;accent-color:var(--cyan);cursor:pointer}
-.field-error{height:0;color:var(--red);font-size:.7rem;overflow:hidden}
-.field-error.show{height:auto;margin-top:4px}
-.invalid{accent-color:var(--red)}
-.presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
-button{border:1px solid transparent;background:#18243d;color:var(--ink);padding:9px 11px;border-radius:10px;cursor:pointer;font-weight:850;transition:transform .12s,filter .12s,opacity .12s}
-button:hover{filter:brightness(1.12)}button:active{transform:translateY(1px)}button:disabled{opacity:.35;cursor:not-allowed;filter:none}
-.primary{width:100%;margin-top:12px;padding:12px;background:linear-gradient(180deg,#45d5fb,#28aedd);color:#06101d;box-shadow:0 10px 24px rgba(40,174,221,.22)}
-.game{overflow:hidden}
-.game-head{display:flex;justify-content:space-between;align-items:center;padding:15px 17px 12px}
-.game-head h2{margin:0;font-size:1rem}.game-head small{display:block;margin-top:3px;color:var(--muted);font-size:.75rem}
-.badge{padding:6px 9px;border-radius:999px;background:#17223a;border:1px solid var(--line);color:var(--muted);font-size:.7rem;font-weight:900;letter-spacing:.05em;text-transform:uppercase}
-.badge.cane{background:var(--green);color:#06151e;border-color:transparent}.badge.rete{background:var(--gold);color:#1d1300;border-color:transparent}.badge.tie{background:#d6dce7;color:#10131a;border-color:transparent}
-.stage{position:relative;min-height:390px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:linear-gradient(#10182a 0 53%,#142e22 53% 100%)}
-.sky{position:absolute;inset:0 0 47% 0;background:linear-gradient(#0d1426,#132039)}
-.cloud{position:absolute;width:90px;height:24px;border-radius:999px;background:rgba(255,255,255,.08)}
-.cloud:before,.cloud:after{content:"";position:absolute;background:inherit;border-radius:50%}.cloud:before{width:34px;height:34px;left:18px;top:-17px}.cloud:after{width:48px;height:48px;left:45px;top:-23px}
-.c1{left:9%;top:12%}.c2{right:12%;top:20%;transform:scale(.7)}
-.sun{position:absolute;right:8%;top:9%;width:62px;height:62px;border-radius:50%;background:#ffd873;box-shadow:0 0 35px rgba(255,216,115,.24)}
-.lane{position:absolute;left:22px;right:22px;height:126px}.internet{top:42px}.dog{bottom:36px}
-.lane-head{position:absolute;left:0;top:-28px;display:flex;align-items:baseline;gap:8px}.lane-title{font-size:.83rem;font-weight:900;letter-spacing:.02em}.lane-note{font-size:.68rem;color:var(--muted)}
-.track{position:absolute;left:68px;right:84px;top:47px;height:9px;border-radius:999px;background:#25314b;border:1px solid rgba(255,255,255,.07)}
-.dog .track{top:29px;height:47px;border-radius:11px;background:var(--road);border-bottom:7px solid #1e2738}
-.mark{position:absolute;top:-5px;width:2px;height:19px;background:#55627d;opacity:.55}.m1{left:25%}.m2{left:50%}.m3{left:75%}
-.endpoint{position:absolute;top:-14px;width:1px;height:38px;border-left:2px dashed #71809d}.start{left:0}.finish{right:0}
-.endpoint-label{position:absolute;top:26px;color:#9ba8bf;font-size:.62rem}.start .endpoint-label{left:0}.finish .endpoint-label{right:0;transform:translateX(100%)}
-#packets{position:absolute;inset:0}
-.packet{position:absolute;top:-10px;left:0;width:25px;height:25px;border-radius:6px;background:var(--cyan);border:1px solid rgba(255,255,255,.35);box-shadow:0 0 16px rgba(85,216,255,.38);display:grid;place-items:center;color:#041018;font-size:.55rem;font-weight:950;will-change:transform,opacity}
-.packet:before{content:"";width:9px;height:9px;border-radius:2px;background:#0d2e3b;opacity:.55}
-.receiver{position:absolute;right:-72px;top:-22px;width:65px;text-align:center}
-.receiver-label{font-size:.62rem;color:#9ba8bf;margin-bottom:5px}.receiver-box{height:17px;border-radius:999px;background:#18253d;border:1px solid rgba(255,255,255,.08);overflow:hidden}.receiver-box span{display:block;height:100%;width:0%;background:var(--cyan);box-shadow:0 0 13px rgba(85,216,255,.5)}
-.receiver.done .receiver-box span{background:var(--green)}
-.receiver-pct{margin-top:3px;font-size:.61rem;font-weight:900;color:#dfe7f3;font-variant-numeric:tabular-nums}
-.finish-flag{position:absolute;right:-15px;top:-5px;width:34px;height:50px}.finish-flag:before{content:"";position:absolute;left:8px;top:0;width:3px;height:50px;background:#dfe6f3}.finish-flag:after{content:"";position:absolute;left:11px;top:4px;width:18px;height:14px;background:repeating-linear-gradient(45deg,#f4f7ff 0 5px,#303b55 5px 10px)}
-.dog-wrap{position:absolute;left:0;bottom:-21px;width:120px;height:76px;overflow:visible;transform:translateX(0);pointer-events:none;will-change:left}
-.dog-window{position:absolute;left:0;bottom:0;width:120px;height:76px;overflow:hidden;image-rendering:pixelated}.dog-sheet{position:absolute;left:26px;bottom:5px;width:64px;height:64px;image-rendering:pixelated;image-rendering:crisp-edges;max-width:none}
-.dog-window.running .dog-sheet{animation:dogBob .42s steps(2) infinite}.dog-window.idle .dog-sheet{animation:none}.fallback-dog{display:none;position:absolute;left:28px;bottom:0;font-size:56px;line-height:70px}.dog-window.failed .fallback-dog{display:block}
-@keyframes dogBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-.playback{display:flex;gap:7px;align-items:center;padding:10px 14px;background:#0d1426;border-bottom:1px solid var(--line)}
-.playback button{min-width:88px}.step-counter{margin-left:auto;color:#8491aa;font-size:.72rem;font-weight:900}
-.timeline{padding:12px 15px 14px}.timeline-top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em}.timeline-bar{height:7px;background:#202c46;border-radius:999px;overflow:hidden;margin-top:7px}.timeline-bar span{display:block;width:0;height:100%;background:var(--cyan)}
-.calc{margin-top:14px;padding:15px}.calc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}.step-dots{display:flex;gap:6px}.dot{width:8px;height:8px;border-radius:50%;background:#25324d}.dot.active{background:var(--cyan);box-shadow:0 0 0 4px rgba(85,216,255,.1)}
-.step-card{min-height:130px;padding:15px;border-radius:13px;background:var(--panel2);border:1px solid var(--line);display:flex;flex-direction:column;justify-content:center}
-.step-kicker{font-size:.68rem;color:var(--cyan);text-transform:uppercase;letter-spacing:.09em;font-weight:900}.step-title{font-size:1.08rem;font-weight:950;margin-top:3px}.step-body{margin-top:6px;color:#c9d3e4;font-size:.84rem;line-height:1.4}.formula{margin-top:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:1rem;font-weight:900}.formula .hot{color:var(--cyan)}
-.result{margin-top:9px;min-height:20px;font-size:.84rem;font-weight:900}.muted{color:var(--muted);font-weight:700}
-@media(max-width:900px){.grid{grid-template-columns:1fr}.controls{order:2}.game{order:1}}
-@media(max-width:620px){header{display:block}.header-note{text-align:left;margin-top:9px}.stage{min-height:415px}.lane{left:12px;right:12px}.track{left:58px;right:72px}.receiver{right:-3px}.playback{flex-wrap:wrap}.step-counter{width:100%;margin-left:0}.playback button{flex:1}}
+
+.mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1200px; margin: auto; padding: 24px 20px; }
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--panel-border);
+  padding-bottom: 16px;
+}
+.eyebrow { font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--cyan); font-weight: 800; }
+h1 { margin: 4px 0 0; font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+.header-note { max-width: 480px; color: var(--text-muted); font-size: 0.88rem; line-height: 1.45; text-align: right; }
+
+/* Scoreboard Gigante Tempi */
+.scoreboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.score-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.005)), var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 20px 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+.score-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+}
+.score-card.net::before { background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
+.score-card.dog::before { background: var(--gold); box-shadow: 0 0 12px var(--gold); }
+
+.score-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.score-title { font-size: 0.9rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.score-big { font-size: clamp(2rem, 4.5vw, 3.2rem); font-weight: 800; line-height: 1; margin: 6px 0; }
+.score-card.net .score-big { color: var(--cyan); text-shadow: 0 0 20px var(--cyan-glow); }
+.score-card.dog .score-big { color: var(--gold); text-shadow: 0 0 20px var(--gold-glow); }
+
+.score-sub { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--text-muted); margin-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px; }
+
+/* Main Grid Layout */
+.grid { display: grid; grid-template-columns: 310px 1fr; gap: 20px; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+
+.controls { padding: 20px; }
+.controls h2 { margin: 0 0 16px; font-size: 1.05rem; font-weight: 700; border-bottom: 1px solid var(--panel-border); padding-bottom: 10px; }
+.field { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.field:last-of-type { border-bottom: none; }
+.field label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
+.field .val { color: var(--text-main); font-weight: 800; }
+
+input[type=range] { width: 100%; accent-color: var(--cyan); cursor: pointer; }
+.presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 16px; }
+
+button {
+  border: 1px solid var(--panel-border);
+  background: #172238;
+  color: var(--text-main);
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.82rem;
+  transition: all 0.15s ease;
+}
+button:hover { background: #202e4c; border-color: #334155; }
+button:active { transform: translateY(1px); }
+button.active { background: var(--cyan); color: #000; font-weight: 800; border-color: var(--cyan); }
+
+.btn-primary {
+  width: 100%;
+  margin-top: 18px;
+  padding: 14px;
+  background: linear-gradient(135deg, #00f0ff, #0099ff);
+  color: #030812;
+  font-weight: 800;
+  font-size: 0.95rem;
+  border: none;
+  box-shadow: 0 8px 20px rgba(0, 240, 255, 0.25);
+}
+.btn-primary:hover { filter: brightness(1.15); }
+
+/* Simulation Arena */
+.game { display: flex; flex-direction: column; overflow: hidden; }
+.game-head { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-bottom: 1px solid var(--panel-border); }
+.game-head h2 { margin: 0; font-size: 1.1rem; }
+
+.badge {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: #1e293b;
+  color: var(--text-muted);
+}
+.badge.cane { background: var(--gold); color: #110d00; box-shadow: 0 0 12px var(--gold-glow); }
+.badge.rete { background: var(--cyan); color: #001217; box-shadow: 0 0 12px var(--cyan-glow); }
+.badge.tie { background: #e2e8f0; color: #0f172a; }
+
+.stage {
+  position: relative;
+  min-height: 380px;
+  background: linear-gradient(180deg, #09101f 0%, #0d172b 55%, #13221b 55%, #0d1913 100%);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+}
+
+/* Track styling */
+.lane-container { position: relative; margin: 15px 0; }
+.lane-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.82rem; font-weight: 700; }
+
+.track-outer {
+  position: relative;
+  height: 54px;
+  background: #111a2e;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+/* Network Canvas track */
+#netCanvas {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none;
+}
+
+/* Accumulator Vault B for Network */
+.vault-b {
+  position: absolute;
+  right: 10px;
+  top: 8px; bottom: 8px;
+  width: 90px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(0,240,255,0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 2px;
+}
+.vault-fill {
+  width: 100%;
+  height: 0%;
+  background: linear-gradient(0deg, var(--cyan), #0099ff);
+  border-radius: 6px;
+  transition: height 0.1s linear;
+  box-shadow: 0 0 12px var(--cyan);
+}
+.vault-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+}
+
+/* Dog Track */
+.dog-track-bg {
+  background: var(--road) !important;
+  border-bottom: 4px solid #141a29 !important;
+}
+.dog-runner {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  height: 48px;
+  width: 60px;
+  pointer-events: none;
+  transition: transform 0.05s linear;
+  will-change: transform;
+}
+.dog-sprite {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+/* Finish flag */
+.finish-line {
+  position: absolute;
+  right: 110px;
+  top: 0; bottom: 0;
+  width: 2px;
+  border-right: 2px dashed rgba(255,255,255,0.25);
+}
+
+/* Control Bar */
+.playback-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: #090e1a;
+  border-top: 1px solid var(--panel-border);
+}
+.playback-bar button { min-width: 90px; }
+.progress-container { flex: 1; margin: 0 12px; }
+.progress-bar-bg { height: 8px; background: #1e293b; border-radius: 999px; overflow: hidden; }
+.progress-bar-fill { height: 100%; width: 0%; background: var(--cyan); transition: width 0.05s linear; }
+
+/* Explanation & Steps */
+.calc-panel { margin-top: 20px; padding: 20px; }
+.calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 14px; }
+.step-box {
+  background: #090e1a;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.step-num { font-size: 0.7rem; font-weight: 800; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.1em; }
+.step-title { font-size: 0.95rem; font-weight: 700; margin: 4px 0 6px; }
+.step-val { font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-top: 6px; }
+
+.humanities-quote {
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: rgba(0, 240, 255, 0.03);
+  border-left: 3px solid var(--cyan);
+  border-radius: 0 12px 12px 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.humanities-quote strong { color: var(--text-main); }
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; }
+  .scoreboard { grid-template-columns: 1fr; }
+  header { flex-direction: column; align-items: flex-start; }
+  .header-note { text-align: left; }
+}
 </style>
 </head>
 <body>
+
 <div class="wrap">
-<header>
-  <div><div class="eyebrow">Mini-game</div><h1>San Bernardo vs Rete</h1></div>
-  <div class="header-note">Segui il calcolo. Usa Avanti, Indietro e Pausa.</div>
-</header>
-<div class="grid">
-<aside class="panel controls">
-  <h2>Parametri</h2>
-  <div class="field"><label><span>Dati</span><span class="value" id="dataOut">8.000 Gbit</span></label><input id="dataRange" type="range" min="100" max="50000" step="100" value="8000"><div class="field-error" id="dataError"></div></div>
-  <div class="field"><label><span>Distanza</span><span class="value" id="distOut">10 km</span></label><input id="distRange" type="range" min="1" max="500" step="0.1" value="10"><div class="field-error" id="distError"></div></div>
-  <div class="field"><label><span>Cane</span><span class="value" id="dogOut">5 km/h</span></label><input id="dogRange" type="range" min="1" max="20" step="0.1" value="5"><div class="field-error" id="dogError"></div></div>
-  <div class="field"><label><span>Rete</span><span class="value" id="netOut">1 Gbit/s</span></label><input id="netRange" type="range" min="0.1" max="100" step="0.1" value="1"><div class="field-error" id="netError"></div></div>
-  <div class="presets"><button data-preset="base">Base</button><button data-preset="soglia">Soglia</button><button data-preset="lontano">100 km</button></div>
-  <button class="primary" id="startBtn">▶ Parti</button>
-</aside>
-<main>
-<section class="panel game">
-  <div class="game-head"><div><h2>La gara</h2><small>Il tempo è compresso.</small></div><div class="badge" id="resultBadge">Pronto</div></div>
-  <div class="stage">
-    <div class="sky"></div><div class="cloud c1"></div><div class="cloud c2"></div><div class="sun"></div>
-    <div class="lane internet">
-      <div class="lane-head"><div class="lane-title">🌐 RETE</div><div class="lane-note">pacchetti</div></div>
-      <div class="track" id="netTrack">
-        <div class="endpoint start"><span class="endpoint-label">A</span></div><div class="endpoint finish"><span class="endpoint-label">B</span></div>
-        <div class="mark m1"></div><div class="mark m2"></div><div class="mark m3"></div><div id="packets"></div>
-        <div class="receiver" id="receiver"><div class="receiver-label">Ricezione</div><div class="receiver-box"><span id="arrivalBar"></span></div><div class="receiver-pct" id="arrivalCount">0%</div></div>
+  <header>
+    <div>
+      <div class="eyebrow">Interactive STEM Comparison</div>
+      <h1>San Bernardo vs Rete</h1>
+    </div>
+    <div class="header-note">
+      Confronto diretto tra la larghezza di banda fisica (*Sneakernet*) e il trasferimento di dati via rete digitale.
+    </div>
+  </header>
+
+  <!-- Scoreboard Gigante Tempi -->
+  <section class="scoreboard">
+    <div class="score-card net">
+      <div class="score-head">
+        <span class="score-title">🌐 Tempo Rete Internet</span>
+        <span class="mono" id="netSpeedBadge" style="color:var(--cyan); font-weight:800;">1.0 Gbit/s</span>
+      </div>
+      <div class="score-big mono" id="netTimeBig">00:00:00</div>
+      <div class="score-sub">
+        <span>Trasferiti: <strong id="netTransferred" class="mono">0 Gbit</strong></span>
+        <span>Stato: <strong id="netStatus">In attesa</strong></span>
       </div>
     </div>
-    <div class="lane dog">
-      <div class="lane-head"><div class="lane-title">🐕 SAN BERNARDO</div><div class="lane-note">tutto il carico</div></div>
-      <div class="track" id="dogTrack">
-        <div class="endpoint start"><span class="endpoint-label">A</span></div><div class="endpoint finish"><span class="endpoint-label">B</span></div>
-        <div class="mark m1"></div><div class="mark m2"></div><div class="mark m3"></div><div class="finish-flag"></div>
-        <div class="dog-wrap" id="dogWrap"><div class="dog-window running" id="dogWindow"><img class="dog-sheet" id="dogSheet" alt="San Bernardo in pixel art"><div class="fallback-dog">🐕</div></div></div>
+
+    <div class="score-card dog">
+      <div class="score-head">
+        <span class="score-title">🐕 Tempo San Bernardo</span>
+        <span class="mono" id="dogSpeedBadge" style="color:var(--gold); font-weight:800;">5.0 km/h</span>
+      </div>
+      <div class="score-big mono" id="dogTimeBig">00:00:00</div>
+      <div class="score-sub">
+        <span>Percorsi: <strong id="dogDistance" class="mono">0.0 km</strong></span>
+        <span>Stato: <strong id="dogStatus">In attesa</strong></span>
       </div>
     </div>
+  </section>
+
+  <div class="grid">
+    <!-- Controlli -->
+    <aside class="panel controls">
+      <h2>Parametri</h2>
+      
+      <div class="field">
+        <label><span>Dati da inviare</span><span class="val mono" id="dataOut">8.000 Gbit</span></label>
+        <input id="dataRange" type="range" min="100" max="100000" step="100" value="8000">
+      </div>
+
+      <div class="field">
+        <label><span>Distanza A ➔ B</span><span class="val mono" id="distOut">10,0 km</span></label>
+        <input id="distRange" type="range" min="0.5" max="200" step="0.5" value="10">
+      </div>
+
+      <div class="field">
+        <label><span>Velocità Cane</span><span class="val mono" id="dogOut">5,0 km/h</span></label>
+        <input id="dogRange" type="range" min="1" max="30" step="0.5" value="5">
+      </div>
+
+      <div class="field">
+        <label><span>Banda Rete</span><span class="val mono" id="netOut">1,0 Gbit/s</span></label>
+        <input id="netRange" type="range" min="0.1" max="10" step="0.1" value="1">
+      </div>
+
+      <div class="presets">
+        <button id="pBase">Base</button>
+        <button id="pThreshold">Soglia</button>
+        <button id="p100km">100 km</button>
+      </div>
+
+      <button class="btn-primary" id="startBtn">▶ Avvia Simulazione</button>
+    </aside>
+
+    <!-- Simulation Stage -->
+    <main class="panel game">
+      <div class="game-head">
+        <div>
+          <h2 style="margin:0;">Campo di Gara</h2>
+          <span style="font-size:0.78rem; color:var(--text-muted);">Simulazione visiva in tempo reale sincronizzata</span>
+        </div>
+        <div class="badge" id="winnerBadge">In Attesa</div>
+      </div>
+
+      <div class="stage">
+        <!-- Lane Rete -->
+        <div class="lane-container">
+          <div class="lane-info">
+            <span>🌐 TRASMISSIONE DATI DIGITALE (Flusso Pacchetti IP)</span>
+            <span class="mono" id="netPct">0%</span>
+          </div>
+          <div class="track-outer">
+            <canvas id="netCanvas"></canvas>
+            <div class="finish-line"></div>
+            <div class="vault-b">
+              <div class="vault-fill" id="vaultFill"></div>
+              <div class="vault-text mono" id="vaultText">0%</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lane Cane -->
+        <div class="lane-container">
+          <div class="lane-info">
+            <span>🐕 TRASPORTO FISICO DI MEMORIA (San Bernardo)</span>
+            <span class="mono" id="dogPct">0%</span>
+          </div>
+          <div class="track-outer dog-track-bg" id="dogTrackOuter">
+            <div class="finish-line"></div>
+            <div class="dog-runner" id="dogRunner">
+              <span style="font-size:32px; display:block; transform: scaleX(-1);">🐕</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Playback bar -->
+      <div class="playback-bar">
+        <button id="pauseBtn">Ⅱ Pausa</button>
+        <button id="resetBtn">↻ Reset</button>
+        <div class="progress-container">
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="simProgressFill"></div></div>
+        </div>
+        <span class="mono" id="simTimeProgress" style="font-size:0.8rem; color:var(--text-muted);">0.0s / 0.0s</span>
+      </div>
+    </main>
   </div>
-  <div class="playback"><button id="backBtn">← Indietro</button><button id="pauseBtn">Ⅱ Pausa</button><button id="nextBtn">Avanti →</button><div class="step-counter" id="stepCounter">1 / 4</div></div>
-  <div class="timeline"><div class="timeline-top"><span>Simulazione</span><span id="simTime">0%</span></div><div class="timeline-bar"><span id="simBar"></span></div></div>
-</section>
-<section class="panel calc">
-  <div class="calc-top"><h2>Calcolo</h2><div class="step-dots"><span class="dot active" data-step-dot="0"></span><span class="dot" data-step-dot="1"></span><span class="dot" data-step-dot="2"></span><span class="dot" data-step-dot="3"></span></div></div>
-  <div class="step-card" id="stepCard"></div>
-  <div class="result" id="resultLine"></div>
-</section>
-</main>
+
+  <!-- Calcolo e Teoria -->
+  <section class="panel calc-panel">
+    <h2 style="margin:0 0 6px;">Formula & Risultato del Calcolo</h2>
+    <p style="margin:0; color:var(--text-muted); font-size:0.88rem;">Confronto matematico basato sulla teoria dell'informazione.</p>
+
+    <div class="calc-grid">
+      <div class="step-box">
+        <div class="step-num">Passo 1</div>
+        <div class="step-title">Volume Dati</div>
+        <div class="step-val mono" id="stepData">8.000 Gbit</div>
+      </div>
+      <div class="step-box">
+        <div class="step-num">Passo 2</div>
+        <div class="step-title">Tempo Rete Internet</div>
+        <div class="step-val mono" id="stepNetCalc">8.000 s</div>
+      </div>
+      <div class="step-box">
+        <div class="step-num">Passo 3</div>
+        <div class="step-title">Tempo San Bernardo</div>
+        <div class="step-val mono" id="stepDogCalc">7.200 s</div>
+      </div>
+      <div class="step-box">
+        <div class="step-num">Passo 4</div>
+        <div class="step-title">Soglia di Pareggio</div>
+        <div class="step-val mono" id="stepThresholdCalc">11.1 km</div>
+      </div>
+    </div>
+
+    <div class="humanities-quote">
+      💡 <strong>Il Principio di Tanenbaum (STEM & Scienze Umane):</strong><br>
+      <em>"Never underestimate the bandwidth of a station wagon full of tapes hurtling down the highway."</em> (Andrew S. Tanenbaum, 1981).<br>
+      Mentre la **rete internet** ha una latenza bassissima ma una larghezza di banda limitata dalla velocità di trasmissione di picco, il **trasporto fisico** (Sneakernet) possiede una latenza iniziale elevata ma una larghezza di banda potenziale immensa. Entro una determinata distanza *soglia*, trasportare fisicamente supporto ad alta densità batte qualsiasi fibra ottica.
+    </div>
+  </section>
 </div>
-</div>
+
 <script>
 (() => {
-  const $ = id => document.getElementById(id);
+  // Elementi DOM
   const els = {
-    dataRange:$('dataRange'),distRange:$('distRange'),dogRange:$('dogRange'),netRange:$('netRange'),
-    dataOut:$('dataOut'),distOut:$('distOut'),dogOut:$('dogOut'),netOut:$('netOut'),
-    dataError:$('dataError'),distError:$('distError'),dogError:$('dogError'),netError:$('netError'),
-    netTrack:$('netTrack'),dogTrack:$('dogTrack'),packets:$('packets'),receiver:$('receiver'),arrivalBar:$('arrivalBar'),arrivalCount:$('arrivalCount'),
-    dogWrap:$('dogWrap'),dogWindow:$('dogWindow'),dogSheet:$('dogSheet'),resultBadge:$('resultBadge'),
-    startBtn:$('startBtn'),backBtn:$('backBtn'),pauseBtn:$('pauseBtn'),nextBtn:$('nextBtn'),stepCounter:$('stepCounter'),
-    simTime:$('simTime'),simBar:$('simBar'),stepCard:$('stepCard'),resultLine:$('resultLine')
+    dataRange: document.getElementById('dataRange'),
+    distRange: document.getElementById('distRange'),
+    dogRange: document.getElementById('dogRange'),
+    netRange: document.getElementById('netRange'),
+    dataOut: document.getElementById('dataOut'),
+    distOut: document.getElementById('distOut'),
+    dogOut: document.getElementById('dogOut'),
+    netOut: document.getElementById('netOut'),
+    netTimeBig: document.getElementById('netTimeBig'),
+    dogTimeBig: document.getElementById('dogTimeBig'),
+    netTransferred: document.getElementById('netTransferred'),
+    dogDistance: document.getElementById('dogDistance'),
+    netStatus: document.getElementById('netStatus'),
+    dogStatus: document.getElementById('dogStatus'),
+    netSpeedBadge: document.getElementById('netSpeedBadge'),
+    dogSpeedBadge: document.getElementById('dogSpeedBadge'),
+    winnerBadge: document.getElementById('winnerBadge'),
+    startBtn: document.getElementById('startBtn'),
+    pauseBtn: document.getElementById('pauseBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    simProgressFill: document.getElementById('simProgressFill'),
+    simTimeProgress: document.getElementById('simTimeProgress'),
+    netPct: document.getElementById('netPct'),
+    dogPct: document.getElementById('dogPct'),
+    vaultFill: document.getElementById('vaultFill'),
+    vaultText: document.getElementById('vaultText'),
+    dogRunner: document.getElementById('dogRunner'),
+    dogTrackOuter: document.getElementById('dogTrackOuter'),
+    netCanvas: document.getElementById('netCanvas'),
+    stepData: document.getElementById('stepData'),
+    stepNetCalc: document.getElementById('stepNetCalc'),
+    stepDogCalc: document.getElementById('stepDogCalc'),
+    stepThresholdCalc: document.getElementById('stepThresholdCalc'),
+    pBase: document.getElementById('pBase'),
+    pThreshold: document.getElementById('pThreshold'),
+    p100km: document.getElementById('p100km')
   };
 
-  const DOG_SPRITE = 'https://opengameart.org/sites/default/files/cao_pixel_final_64_0.png';
-  els.dogSheet.src = DOG_SPRITE;
-  els.dogSheet.addEventListener('error', () => els.dogWindow.classList.add('failed'));
+  const ctx = els.netCanvas.getContext('2d');
 
-  const rules = {
-    dataRange:{min:100,max:50000,error:els.dataError,label:'Dati'},
-    distRange:{min:1,max:500,error:els.distError,label:'Distanza'},
-    dogRange:{min:1,max:20,error:els.dogError,label:'Cane'},
-    netRange:{min:.1,max:100,error:els.netError,label:'Rete'}
-  };
+  // Stato e Variabili
+  let state = { data: 8000, dist: 10, dogSpeed: 5, netSpeed: 1 };
+  let model = { tNet: 0, tDog: 0, tMax: 0, threshold: 0 };
+  let sim = { active: false, paused: false, elapsedSec: 0, rafId: null, lastTime: 0 };
+  let packets = [];
 
-  const PACKET_PLANS = [
-    [0.00,0.34],[0.07,0.29],[0.15,0.36],[0.24,0.27],[0.32,0.33],[0.41,0.30],[0.50,0.35],[0.59,0.28],[0.67,0.32],[0.75,0.25]
-  ];
-  const STEP_POINTS = [0,.28,.58,1];
-  const SIM_MS = 18000;
-
-  let raf=null,lastFrame=0,simProgress=0,step=0,playing=false,model=null;
-
-  const fmt = (n,d=1) => new Intl.NumberFormat('it-IT',{maximumFractionDigits:d}).format(n);
-  const timeText = seconds => {
-    if(seconds < 60) return `${fmt(seconds,0)} s`;
-    const minutes = seconds/60;
-    if(minutes < 60) return `${fmt(minutes,0)} min`;
-    const hours = minutes/60;
-    return `${fmt(hours,1)} h`;
-  };
-
-  function state(){
-    return {data:Number(els.dataRange.value),distance:Number(els.distRange.value),dog:Number(els.dogRange.value),net:Number(els.netRange.value)};
-  }
-  function calc(s){
-    const net=s.data/s.net;
-    const dog=(s.distance/s.dog)*3600;
-    return {net,dog,threshold:s.dog*net/3600,max:Math.max(net,dog)};
-  }
-  function validate(){
-    let ok=true;
-    Object.entries(rules).forEach(([id,r])=>{
-      const v=Number(els[id].value), valid=Number.isFinite(v)&&v>=r.min&&v<=r.max;
-      els[id].classList.toggle('invalid',!valid); r.error.textContent=valid?'':`${r.label}: ${fmt(r.min,1)}–${fmt(r.max,1)}`; r.error.classList.toggle('show',!valid); ok&&=valid;
-    });
-    return ok;
-  }
-  function travel(){
-    return {net:Math.max(0,els.netTrack.clientWidth-25),dog:Math.max(0,els.dogTrack.clientWidth-els.dogWrap.offsetWidth)};
-  }
-  function makePackets(){
-    els.packets.innerHTML='';
-    PACKET_PLANS.forEach((_,i)=>{const p=document.createElement('div');p.className='packet';p.setAttribute('aria-hidden','true');p.dataset.i=i;els.packets.appendChild(p);});
-  }
-  function packetPhase(plan,networkProgress){
-    const start=plan[0],duration=plan[1];
-    return Math.max(0,Math.min(1,(networkProgress-start)/duration));
-  }
-  function render(progress){
-    if(!model)return;
-    const actual=progress*model.max;
-    const netProgress=Math.min(1,actual/model.net);
-    const dogProgress=Math.min(1,actual/model.dog);
-    const w=travel();
-
-    [...els.packets.children].forEach((p,i)=>{
-      const ph=packetPhase(PACKET_PLANS[i],netProgress);
-      if(ph<=0||ph>=1){p.style.opacity=ph>=1?'0':'0';p.style.transform='translate3d(0,0,0)';return;}
-      const y=Math.sin((ph*Math.PI*2)+(i*1.9))*1.4;
-      p.style.opacity='1';p.style.transform=`translate3d(${ph*w.net}px,${y}px,0)`;
-    });
-
-    const received=Math.round(netProgress*100);
-    els.arrivalBar.style.width=`${received}%`;
-    els.arrivalCount.textContent=`${received}%`;
-    els.receiver.classList.toggle('done',netProgress>=1);
-
-    els.dogWrap.style.left=`${dogProgress*w.dog}px`;
-    els.dogWindow.classList.toggle('running',dogProgress<1);
-    els.dogWindow.classList.toggle('idle',dogProgress>=1);
-
-    els.simBar.style.width=`${progress*100}%`;
-    els.simTime.textContent=`${Math.round(progress*100)}%`;
+  // Utility Formattazione
+  const fmt = (n, d = 1) => new Intl.NumberFormat('it-IT', { maximumFractionDigits: d }).format(n);
+  
+  function formatSeconds(sec) {
+    if (isNaN(sec) || sec === Infinity) return "00:00:00";
+    const hrs = Math.floor(sec / 3600);
+    const mins = Math.floor((sec % 3600) / 60);
+    const secs = Math.floor(sec % 60);
+    return `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
   }
 
-  function renderStepCard(){
-    const s=state(), c=calc(s); model=c;
-    const cards=[
-      {k:'Passo 1',t:'Partiamo dai dati',b:'La quantità da consegnare è questa.',f:`<span class="hot">${fmt(s.data,0)} Gbit</span>`},
-      {k:'Passo 2',t:'La rete divide i dati',b:'Tempo = dati ÷ velocità.',f:`${fmt(s.data,0)} ÷ ${fmt(s.net,1)} = <span class="hot">${timeText(c.net)}</span>`},
-      {k:'Passo 3',t:'Il cane percorre la distanza',b:'Tempo = distanza ÷ velocità.',f:`${fmt(s.distance,1)} ÷ ${fmt(s.dog,1)} = <span class="hot">${timeText(c.dog)}</span>`},
-      {k:'Passo 4',t:'Confrontiamo i tempi',b:'Sotto la soglia vince il cane. Sopra la soglia vince la rete.',f:`soglia = <span class="hot">${fmt(c.threshold,1)} km</span>`}
-    ];
-    const card=cards[step];
-    els.stepCard.innerHTML=`<div class="step-kicker">${card.k}</div><div class="step-title">${card.t}</div><div class="step-body">${card.b}</div><div class="formula">${card.f}</div>`;
-    if(step===3){
-      const winner=c.dog===c.net?'tie':c.dog<c.net?'cane':'rete';
-      els.resultBadge.className=`badge ${winner}`;
-      els.resultBadge.textContent=winner==='tie'?'Pareggio':winner==='cane'?'Vince il cane':'Vince la rete';
-      els.resultLine.innerHTML=winner==='tie'?'Arrivano insieme.':winner==='cane'?'Il cane arriva prima.':'La rete arriva prima.';
-    }else{
-      els.resultBadge.className='badge';els.resultBadge.textContent='In corso';
-      els.resultLine.innerHTML='';
+  // Calcoli Logici
+  function updateModel() {
+    state.data = parseFloat(els.dataRange.value);
+    state.dist = parseFloat(els.distRange.value);
+    state.dogSpeed = parseFloat(els.dogRange.value);
+    state.netSpeed = parseFloat(els.netRange.value);
+
+    // Tempo Rete = Dati (Gbit) / Banda (Gbit/s)
+    const tNet = state.data / state.netSpeed;
+    // Tempo Cane = (Distanza km / Velocità km/h) * 3600 secondi
+    const tDog = (state.dist / state.dogSpeed) * 3600;
+    // Distanza di pareggio dove tNet == tDog
+    const threshold = (state.data * state.dogSpeed) / (state.netSpeed * 3600);
+
+    model = { tNet, tDog, tMax: Math.max(tNet, tDog), threshold };
+
+    // Aggiorna UI Etichette
+    els.dataOut.textContent = `${fmt(state.data, 0)} Gbit`;
+    els.distOut.textContent = `${fmt(state.dist, 1)} km`;
+    els.dogOut.textContent = `${fmt(state.dogSpeed, 1)} km/h`;
+    els.netOut.textContent = `${fmt(state.netSpeed, 1)} Gbit/s`;
+
+    els.netSpeedBadge.textContent = `${fmt(state.netSpeed, 1)} Gbit/s`;
+    els.dogSpeedBadge.textContent = `${fmt(state.dogSpeed, 1)} km/h`;
+
+    els.netTimeBig.textContent = formatSeconds(tNet);
+    els.dogTimeBig.textContent = formatSeconds(tDog);
+
+    els.stepData.textContent = `${fmt(state.data, 0)} Gbit`;
+    els.stepNetCalc.textContent = formatSeconds(tNet);
+    els.stepDogCalc.textContent = formatSeconds(tDog);
+    els.stepThresholdCalc.textContent = `${fmt(threshold, 1)} km`;
+
+    // Vincitore Teorico
+    if (Math.abs(tNet - tDog) < 0.1) {
+      els.winnerBadge.className = 'badge tie';
+      els.winnerBadge.textContent = 'Pareggio Imminente';
+    } else if (tDog < tNet) {
+      els.winnerBadge.className = 'badge cane';
+      els.winnerBadge.textContent = 'Vantaggio: San Bernardo';
+    } else {
+      els.winnerBadge.className = 'badge rete';
+      els.winnerBadge.textContent = 'Vantaggio: Rete';
     }
   }
 
-  function updateNumbers(){
-    const s=state();
-    els.dataOut.textContent=`${fmt(s.data,0)} Gbit`;els.distOut.textContent=`${fmt(s.distance,1)} km`;
-    els.dogOut.textContent=`${fmt(s.dog,1)} km/h`;els.netOut.textContent=`${fmt(s.net,1)} Gbit/s`;
+  // Canvas Resize
+  function resizeCanvas() {
+    const rect = els.netCanvas.getBoundingClientRect();
+    els.netCanvas.width = rect.width;
+    els.netCanvas.height = rect.height;
   }
-  function updateDots(){
-    document.querySelectorAll('[data-step-dot]').forEach(d=>d.classList.toggle('active',Number(d.dataset.stepDot)===step));
-    els.stepCounter.textContent=`${step+1} / 4`;
-  }
-  function updateButtons(){
-    els.backBtn.disabled=step===0&&simProgress<=0;
-    els.nextBtn.disabled=step===3&&simProgress>=1;
-    els.pauseBtn.textContent=playing?'Ⅱ Pausa':'▶ Riprendi';
-  }
-  function updateUI(){
-    if(!validate())return;
-    updateNumbers();renderStepCard();updateDots();updateButtons();render(simProgress);
-  }
-  function stop(){if(raf)cancelAnimationFrame(raf);raf=null;playing=false;}
-  function reset(){stop();simProgress=0;step=0;els.dogWindow.classList.add('running');els.dogWindow.classList.remove('idle');updateUI();}
-  function setStep(n){
-    step=Math.max(0,Math.min(3,n));simProgress=STEP_POINTS[step];stop();updateUI();
-  }
-  function frame(now){
-    if(!playing)return;
-    const dt=now-lastFrame;lastFrame=now;simProgress=Math.min(1,simProgress+dt/SIM_MS);
-    step=simProgress<STEP_POINTS[1]?0:simProgress<STEP_POINTS[2]?1:simProgress<1?2:3;
-    updateUI();
-    if(simProgress<1)raf=requestAnimationFrame(frame);else{stop();updateUI();}
-  }
-  function start(){
-    if(!validate())return;
-    stop();simProgress=0;step=0;playing=true;lastFrame=performance.now();updateUI();raf=requestAnimationFrame(frame);
-  }
-  function togglePause(){
-    if(!model)return;
-    if(playing){stop();updateUI();return;}
-    if(simProgress>=1)simProgress=0;
-    playing=true;lastFrame=performance.now();updateUI();raf=requestAnimationFrame(frame);
-  }
-  function back(){
-    stop();
-    if(step>0)setStep(step-1);else{simProgress=Math.max(0,simProgress-.1);updateUI();}
-  }
-  function next(){
-    stop();
-    if(step<3)setStep(step+1);else{simProgress=Math.min(1,simProgress+.1);updateUI();}
+  window.addEventListener('resize', resizeCanvas);
+
+  // Gestione Flusso Pacchetti nel Canvas
+  function updateAndDrawPackets(dt, isNetActive) {
+    ctx.clearRect(0, 0, els.netCanvas.width, els.netCanvas.height);
+    const startX = 20;
+    const endX = els.netCanvas.width - 110;
+    const centerY = els.netCanvas.height / 2;
+
+    // Disegna la linea guida della rete
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
+    ctx.lineWidth = 4;
+    ctx.moveTo(startX, centerY);
+    ctx.lineTo(endX, centerY);
+    ctx.stroke();
+
+    // Genera nuovi pacchetti se la rete sta trasferendo
+    if (isNetActive && Math.random() < 0.6) {
+      packets.push({
+        x: startX,
+        speed: (endX - startX) * (1.2 + Math.random() * 0.4), // velocità dinamica visiva
+        size: 5 + Math.random() * 4,
+        offsetY: (Math.random() - 0.5) * 6
+      });
+    }
+
+    // Aggiorna e disegna ciascun pacchetto
+    for (let i = packets.length - 1; i >= 0; i--) {
+      const p = packets[i];
+      p.x += p.speed * dt;
+
+      ctx.beginPath();
+      ctx.fillStyle = '#00f0ff';
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 10;
+      ctx.arc(p.x, centerY + p.offsetY, p.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Se il pacchetto arriva al Vault B, viene eliminato
+      if (p.x >= endX) {
+        packets.splice(i, 1);
+      }
+    }
   }
 
-  ['dataRange','distRange','dogRange','netRange'].forEach(id=>els[id].addEventListener('input',reset));
-  document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{
-    const p={base:[8000,10,5,1],soglia:[8000,11.1,5,1],lontano:[8000,100,5,1]}[b.dataset.preset];
-    [els.dataRange,els.distRange,els.dogRange,els.netRange].forEach((el,i)=>el.value=p[i]);reset();
-  }));
-  els.startBtn.addEventListener('click',start);els.pauseBtn.addEventListener('click',togglePause);els.backBtn.addEventListener('click',back);els.nextBtn.addEventListener('click',next);
-  window.addEventListener('resize',()=>render(simProgress));
-  makePackets();updateUI();render(0);
+  // Render Loop Simulazione
+  function renderFrame(now) {
+    if (!sim.active) return;
+
+    if (!sim.paused) {
+      const dt = (now - sim.lastTime) / 1000;
+      sim.lastTime = now;
+
+      // Velocità simulazione compressa (max 15 secondi per l'intero processo)
+      const simSpeedMultiplier = model.tMax / 15;
+      sim.elapsedSec += dt * simSpeedMultiplier;
+
+      if (sim.elapsedSec >= model.tMax) {
+        sim.elapsedSec = model.tMax;
+        sim.active = false;
+        els.pauseBtn.textContent = '▶ Riprendi';
+      }
+    } else {
+      sim.lastTime = now;
+    }
+
+    const currSec = sim.elapsedSec;
+
+    // Avanzamento Rete
+    const netProgress = Math.min(1, currSec / model.tNet);
+    const netGbitTransferred = Math.min(state.data, netProgress * state.data);
+    els.netTransferred.textContent = `${fmt(netGbitTransferred, 0)} Gbit`;
+    els.netPct.textContent = `${Math.round(netProgress * 100)}%`;
+    els.vaultFill.style.height = `${netProgress * 100}%`;
+    els.vaultText.textContent = `${Math.round(netProgress * 100)}%`;
+
+    if (netProgress >= 1) {
+      els.netStatus.textContent = 'Completato';
+      els.netStatus.style.color = 'var(--cyan)';
+    } else if (sim.active && !sim.paused) {
+      els.netStatus.textContent = 'In corso...';
+      els.netStatus.style.color = 'var(--text-main)';
+    }
+
+    // Avanzamento Cane
+    const dogProgress = Math.min(1, currSec / model.tDog);
+    const dogKmTraveled = Math.min(state.dist, dogProgress * state.dist);
+    els.dogDistance.textContent = `${fmt(dogKmTraveled, 1)} km`;
+    els.dogPct.textContent = `${Math.round(dogProgress * 100)}%`;
+
+    // Posizionamento San Bernardo
+    const trackWidth = els.dogTrackOuter.clientWidth - 170;
+    const posX = dogProgress * trackWidth;
+    els.dogRunner.style.transform = `translateX(${posX}px)`;
+
+    if (dogProgress >= 1) {
+      els.dogStatus.textContent = 'Arrivato';
+      els.dogStatus.style.color = 'var(--gold)';
+    } else if (sim.active && !sim.paused) {
+      els.dogStatus.textContent = 'In viaggio...';
+      els.dogStatus.style.color = 'var(--text-main)';
+    }
+
+    // Barra Progresso Generale Simulazione
+    const totalSimProgress = Math.min(1, currSec / model.tMax);
+    els.simProgressFill.style.width = `${totalSimProgress * 100}%`;
+    els.simTimeProgress.textContent = `${formatSeconds(currSec)} / ${formatSeconds(model.tMax)}`;
+
+    // Disegna Pacchetti Rete nel Canvas
+    updateAndDrawPackets(0.016, netProgress < 1 && sim.active && !sim.paused);
+
+    if (sim.active) {
+      sim.rafId = requestAnimationFrame(renderFrame);
+    }
+  }
+
+  // Controlli Simulazione
+  function startSimulation() {
+    updateModel();
+    resizeCanvas();
+    sim.elapsedSec = 0;
+    sim.active = true;
+    sim.paused = false;
+    sim.lastTime = performance.now();
+    packets = [];
+    els.pauseBtn.textContent = 'Ⅱ Pausa';
+    if (sim.rafId) cancelAnimationFrame(sim.rafId);
+    sim.rafId = requestAnimationFrame(renderFrame);
+  }
+
+  function togglePause() {
+    if (!sim.active && sim.elapsedSec >= model.tMax) {
+      startSimulation();
+      return;
+    }
+    sim.paused = !sim.paused;
+    els.pauseBtn.textContent = sim.paused ? '▶ Riprendi' : 'Ⅱ Pausa';
+  }
+
+  function resetSimulation() {
+    sim.active = false;
+    sim.paused = false;
+    sim.elapsedSec = 0;
+    if (sim.rafId) cancelAnimationFrame(sim.rafId);
+    packets = [];
+    ctx.clearRect(0, 0, els.netCanvas.width, els.netCanvas.height);
+    
+    updateModel();
+    
+    els.netTransferred.textContent = '0 Gbit';
+    els.dogDistance.textContent = '0.0 km';
+    els.netStatus.textContent = 'In attesa';
+    els.dogStatus.textContent = 'In attesa';
+    els.netPct.textContent = '0%';
+    els.dogPct.textContent = '0%';
+    els.vaultFill.style.height = '0%';
+    els.vaultText.textContent = '0%';
+    els.dogRunner.style.transform = 'translateX(0px)';
+    els.simProgressFill.style.width = '0%';
+    els.simTimeProgress.textContent = `00:00:00 / ${formatSeconds(model.tMax)}`;
+    els.pauseBtn.textContent = 'Ⅱ Pausa';
+  }
+
+  // Listeners Eventi
+  ['dataRange', 'distRange', 'dogRange', 'netRange'].forEach(id => {
+    els[id].addEventListener('input', resetSimulation);
+  });
+
+  els.startBtn.addEventListener('click', startSimulation);
+  els.pauseBtn.addEventListener('click', togglePause);
+  els.resetBtn.addEventListener('click', resetSimulation);
+
+  // Preset
+  els.pBase.addEventListener('click', () => {
+    els.dataRange.value = 8000;
+    els.distRange.value = 10;
+    els.dogRange.value = 5;
+    els.netRange.value = 1;
+    resetSimulation();
+  });
+
+  els.pThreshold.addEventListener('click', () => {
+    els.dataRange.value = 8000;
+    els.distRange.value = 11.1;
+    els.dogRange.value = 5;
+    els.netRange.value = 1;
+    resetSimulation();
+  });
+
+  els.p100km.addEventListener('click', () => {
+    els.dataRange.value = 8000;
+    els.distRange.value = 100;
+    els.dogRange.value = 5;
+    els.netRange.value = 1;
+    resetSimulation();
+  });
+
+  // Init iniziale
+  resizeCanvas();
+  resetSimulation();
 })();
 </script>
 </body>
